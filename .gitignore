@@ -1,5 +1,7 @@
+.env
 target
 .idea
 **/.~lock.*
 *.class
 *.log
+test.mv.db
