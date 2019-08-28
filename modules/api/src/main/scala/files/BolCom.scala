@@ -28,8 +28,7 @@ object BolCom {
   def parseBolComAanbod(in: InputStream): Seq[BookEntry] = {
     val aanbodWorkbook = new XSSFWorkbook(in)
     val aanbod = aanbodWorkbook.getSheetAt(0)
-    Range(3, aanbod.getLastRowNum + 1).map(r => {
-      val row = aanbod.getRow(r)
+    Range(3, aanbod.getLastRowNum + 1).map(aanbod.getRow(_)).filterNot(row => row==null || row.getLastCellNum<7).map(row => {
       BookEntry(reference = row.getCell(0).getStringCellValue,
         isbn = row.getCell(1).getStringCellValue,
         condition = row.getCell(2).getStringCellValue,

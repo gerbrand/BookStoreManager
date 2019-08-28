@@ -73,7 +73,7 @@ object ConvertBolCom {
     if (args.length > 0) {
       val aanbodFile = new File(args(0))
       val inputStream = new FileInputStream(aanbodFile)
-      val bookEntries = parseBolComAanbod(inputStream).dropWhile(_.isbn!="9780715629369")
+      val bookEntries = parseBolComAanbod(inputStream)
       inputStream.close()
 
       val woocommerceFile = new File(aanbodFile.getParentFile, aanbodFile.getName.split('.')(0) + ".csv")

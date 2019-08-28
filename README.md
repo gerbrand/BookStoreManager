@@ -1,4 +1,4 @@
-# Bookstore Manager
+#  Tiny Store Manager
 
 **Work in progress**
 

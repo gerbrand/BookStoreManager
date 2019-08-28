@@ -12,7 +12,7 @@ lazy val databaseUrl = sys.env.getOrElse("DB_DEFAULT_URL", "jdbc:h2:./test")
 lazy val databaseUser = sys.env.getOrElse("DB_DEFAULT_USER", "sa")
 lazy val databasePassword = sys.env.getOrElse("DB_DEFAULT_PASSWORD", "")
 
-slickCodegenSettings
+enablePlugins(CodegenPlugin)
 slickCodegenDatabaseUrl := databaseUrl
 slickCodegenDatabaseUser := databaseUser
 slickCodegenDatabasePassword := databasePassword

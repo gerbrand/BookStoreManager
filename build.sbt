@@ -1,4 +1,6 @@
-name := "bookstoremanager"
+name := "tiny-store-manager"
+
+description := "Tiny Store Manager"
 
 version := "0.1"
 
@@ -15,7 +17,6 @@ val playVersion = play.core.PlayVersion.current
 libraryDependencies += "org.flywaydb" % "flyway-core" % "5.1.1"
 libraryDependencies += "com.typesafe.play" %% "play-ahc-ws" % playVersion % Test
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 lazy val flyway = (project in file("modules/flyway"))
   .enablePlugins(FlywayPlugin)
@@ -31,9 +32,7 @@ lazy val api = (project in file("modules/api"))
       "org.apache.poi" % "poi-ooxml" % "4.1.0",
       "com.bol.openapi" % "openapi-java-client" % "4.1.0",
       "com.google.api-client" % "google-api-client" % "1.30.2",
-    ),
-    libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "4.0.3" % Test,
-    libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+    )
   )
 
 
@@ -42,8 +41,16 @@ lazy val slick = (project in file("modules/slick"))
   .aggregate(api)
   .dependsOn(api)
 
+lazy val cli = (project in (file("cli")))
+  .enablePlugins(JavaAppPackaging)
+  .settings(Common.projectSettings)
+  .settings(
+    name := "cli",
+    mainClass := Some("cli.ConvertBolCom"))
+  .dependsOn(slick)
+
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala)
-  .aggregate(slick)
+  .aggregate(cli)
   .dependsOn(slick)
 
