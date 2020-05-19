@@ -19,7 +19,7 @@ object BolCom {
   head: List(Reference, EAN, Condition, Stock, Price, Deliverycode, Offer description, For sale, Title)
    */
 
-  case class ProductEntry(reference: String, isbn: String, condition: String, stock: Int, price: BigDecimal, deliveryCode: String, description: String, longDescription: String, forSale: Boolean, title: String, images: Seq[String])
+  case class ProductEntry(reference: String, ean: String, condition: String, stock: Int, price: BigDecimal, deliveryCode: String, description: Option[String], longDescription: String, forSale: Boolean, title: Option[String])
 
   def fromJaNee(v: String): Boolean = v.toUpperCase() == "JA"
 
@@ -29,6 +29,9 @@ object BolCom {
     override val quoting = QUOTE_NONNUMERIC
   }
 
+  /**
+   * Gets entries from the BolCom product file, with additional column for images
+   */
   def getEntries(aanbodWorkbook: XSSFWorkbook) = {
     getEntryRows(aanbodWorkbook).map(row => {
       (row, toEntry(row))
@@ -43,47 +46,45 @@ object BolCom {
   def toEntry(row: XSSFRow) = {
     assert(row!=null && row.getLastCellNum>=7)
     ProductEntry(reference = row.getCell(0).getRawValue,
-      isbn = row.getCell(1).getRawValue,
+      ean = row.getCell(1).getRawValue,
       condition = row.getCell(2).getRawValue,
       stock = Integer.parseInt(row.getCell(3).getRawValue),
       price = BigDecimal(row.getCell(4).getRawValue),
       deliveryCode = row.getCell(5).getRawValue,
       longDescription = row.getCell(6).getRawValue,
       forSale = fromJaNee(row.getCell(7).getRawValue),
-      title = row.getCell(8).getRawValue,
-      images = {
-        val _images: Option[Seq[String]] = Option(row.getCell(9)).map(_.getRawValue.split(',').map(_.trim).toSeq)
-        _images.getOrElse(Seq.empty[String])
-      },
-      description = Option(row.getCell(10)).map(_.getRawValue).getOrElse(""))
+      title = Option(row.getCell(8).getRawValue),
+      description = Option(row.getCell(10)).map(_.getRawValue)
+    )
   }
 
   def writeEntry(row: XSSFRow, entry: ProductEntry) = {
     updateCellIfNeeded(row, 8, entry.title)
-    updateCellIfNeeded(row, 9, entry.images)
   }
 
 
-  def updateCellIfNeeded[T](row: XSSFRow, cellNum: Int, value: T)  = {
-    if (! value.toString.isBlank) {
+  def updateCellIfNeeded[T](row: XSSFRow, cellNum: Int, value: Option[T])  = {
+    value.foreach(v => {
       val cell = row.getCell(cellNum, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK)
-      if (cell.getStringCellValue!=value.toString) {
-        value match {
+      if (cell.getStringCellValue!=v.toString) {
+        /** Deconstruct based on type. */
+        v match {
           case v:Seq[String] =>cell.setCellFormula(v.mkString("\"",",",""))
           case v:String =>cell.setCellValue(v)
           case v:Double =>cell.setCellValue(v)
           case v:Calendar =>cell.setCellValue(v)
           case v:RichTextString =>cell.setCellValue(v)
           case v:Date =>cell.setCellValue(v)
+          case v:Boolean => cell.setCellValue(v)
         }
       }
-    }
+    })
+
 
   }
 
   def openWorkbook(in: InputStream) = {
     val aanbodWorkbook = new XSSFWorkbook(in)
-    aanbodWorkbook
     aanbodWorkbook.close()
   }
 }

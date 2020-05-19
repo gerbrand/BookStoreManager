@@ -4,6 +4,9 @@ import java.net.URL
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * Access publicly available data on books from AbeBooks
+ */
 object AbeBooks {
   def getImageUrl(isbn: String)(implicit ec: ExecutionContext) = {
     Future {

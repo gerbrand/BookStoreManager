@@ -11,9 +11,9 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   "bolcom-bintray" at "https://dl.bintray.com/pvdissel/bol-com-releases")
 
-lazy val akkaHttpVersion = "10.1.11"
-lazy val akkaVersion    = "2.6.4 "
-lazy val circeVersion = "0.13.0-M4"
+lazy val akkaHttpVersion = "10.1.12"
+lazy val akkaVersion    = "2.6.5"
+lazy val circeVersion = "0.13.0"
 
 val jsonDependencies: List[ModuleID] = List(
   "io.circe"                          %% "circe-core"                 % circeVersion,

@@ -47,7 +47,7 @@ object ConvertBolCom {
       writer.writeRow(WooCommerce.header)
 
 
-      val entryRows = BolCom.getEntryRows(aanbodWorkbook)
+      val entryRows = BolCom.getEntryRows(aanbodWorkbook).take(10)
 
       def close() = {
         Future {
@@ -59,10 +59,10 @@ object ConvertBolCom {
 
       val result = FutureUtil.sequentialTraverse(entryRows)(row => {
         val entry = BolCom.toEntry(row)
-        enrichEntry(entry).map(enrichedEntry => {
-          writer.writeRow(WooCommerce.toCsvRow(enrichedEntry))
-          BolCom.writeEntry(row, enrichedEntry)
-        })
+        for {
+          enrichment <- enrichEntry(entry)
+          _ <- Future{ writer.writeRow(WooCommerce.toCsvRow(WooCommerce.toWooCommerceEntry(entry, enrichment))) }
+        } yield()
       }).flatMap(_ => close())
       result.recoverWith { case e => {
         log.error("Could not process entire file", e)

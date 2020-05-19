@@ -7,7 +7,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
- * Access some public data from LibraryThing
+ * Access some public data on books from LibraryThing
  *
  * @see http://www.librarything.com/api
  */
