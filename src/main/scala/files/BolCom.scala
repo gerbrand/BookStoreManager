@@ -49,13 +49,17 @@ object BolCom {
       ean = row.getCell(1).getRawValue,
       condition = row.getCell(2).getRawValue,
       stock = Integer.parseInt(row.getCell(3).getRawValue),
-      price = BigDecimal(row.getCell(4).getRawValue),
+      price = BigDecimal(getPriceCell(row).getRawValue),
       deliveryCode = row.getCell(5).getRawValue,
       longDescription = row.getCell(6).getRawValue,
       forSale = fromJaNee(row.getCell(7).getRawValue),
       title = Option(row.getCell(8).getRawValue),
       description = Option(row.getCell(10)).map(_.getRawValue)
     )
+  }
+
+  def getPriceCell(row: XSSFRow) = {
+    row.getCell(4)
   }
 
   def writeEntry(row: XSSFRow, entry: ProductEntry) = {

@@ -47,7 +47,7 @@ object ConvertBolCom {
       writer.writeRow(WooCommerce.header)
 
 
-      val entryRows = BolCom.getEntryRows(aanbodWorkbook).take(10)
+      val entryRows = BolCom.getEntryRows(aanbodWorkbook)
 
       def close() = {
         Future {
