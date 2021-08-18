@@ -12,7 +12,12 @@ import scala.concurrent.{ExecutionContext, Future}
 object ProductEnricher {
   private val log = LoggerFactory.getLogger(getClass)
 
-  def enrichEntry(bookEntry: ProductEntry)(implicit ec: ExecutionContext):Future[Option[Enrichment]] = {
+  def findBookInfo(ean: String, reference: String, title: Option[String])(implicit ec: ExecutionContext): Future[BookInformation] = {
+    for {
+      googleInfo <- findBookInfoByEANViaGoogleBooks(ean)
+    } yield(googleInfo.getOrElse(BookInformation(title = fuzzyTitle(reference))))
+  }
+  def enrichEntry(bookEntry: ProductEntry)(implicit ec: ExecutionContext):Future[Option[BookInformation]] = {
 //    if (! bookEntry.enriched.getOrElse(false)) {
 //      enrichViaBolCom(bookEntry)
 //        .flatMap(entry => enrichViaGoogleBooks(entry).recover {
@@ -35,46 +40,48 @@ object ProductEnricher {
 //    }
   }
 
-  private def fuzzyTitle(bookEntry: ProductEntry):Option[String] = {
-      Some(StringUtils.capitalize(s"${bookEntry.reference.replaceAll("\\d","")}")).filterNot(_.isBlank)
+  private def fuzzyTitle(reference: String):String = {
+      StringUtils.capitalize(s"${reference.replaceAll("\\d","")}")
   }
 
-  private def enrichViaGoogleBooks(bookEntry: ProductEntry)(implicit ec: ExecutionContext): Future[Option[Enrichment]] = {
-      GoogleBooks.queryGoogleBooks(bookEntry.ean).map(_.headOption.map(volume => {
+  private def findBookInfoByEANViaGoogleBooks(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
+      GoogleBooks.queryGoogleBooks(ean).map(_.headOption.map(volume => {
         val title = volume.getVolumeInfo.getTitle
-        val images = Option(volume.getVolumeInfo.getImageLinks).map(imageLinks => Option(imageLinks.getMedium).toSeq ++ Option(imageLinks.getThumbnail) ++ Option(imageLinks.getLarge)++ Option(imageLinks.getExtraLarge))
+        val description = volume.getVolumeInfo.getDescription
+        val images = Option(volume.getVolumeInfo.getImageLinks).toSeq.flatMap(imageLinks => Option(imageLinks.getMedium).toSeq ++ Option(imageLinks.getThumbnail) ++ Option(imageLinks.getLarge)++ Option(imageLinks.getExtraLarge))
         log.info(s"Via GoogleBooks: $images, $title")
-        Enrichment(images = images, title = Some(title))
+        BookInformation(images = images, title = title, description = Some(description))
       }))
   }
 
-  private def enrichViaBolCom(bookEntry: ProductEntry)(implicit ec: ExecutionContext): Future[Option[Enrichment]] = {
-      BolComOpenApi.findProducts(bookEntry.ean).map(_.headOption.map(product => {
+  private def findBookInfoByEANViaBolCom(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
+      BolComOpenApi.findProducts(ean).map(_.headOption.map(product => {
         import scala.jdk.CollectionConverters._
         val title = product.getTitle
+
         val images = product.getMedia.asScala.map(_.getUrl).toList
         log.info(s"Via Bolcom: $images, $title")
-        Enrichment(images = Some(images), title = Some(title))
+        BookInformation(images = images, title = title, description =  Option(product.getShortDescription))
       }))
   }
 
-  private def enrichViaLT(bookEntry: ProductEntry)(implicit ec: ExecutionContext): Future[Option[Enrichment]] = {
-    LibraryThing.getMetaDataByISBN(bookEntry.ean).map(metaData => {
+  private def findBookInfoByEANViaLT(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
+    LibraryThing.getMetaDataByISBN(ean).map(metaData => {
       val images = metaData.view.filterKeys(_.endsWith("image")).values.toSeq
       val title:Option[String] = metaData.view.get("og:title")
       if (! (images.isEmpty || title.isEmpty)) {
         log.info(s"Via LibraryThing: $images, $title")
-        Some(Enrichment(images = Some(images), title = title))
+        Some(BookInformation(images = images, title = title.getOrElse("")))
       } else {
         None
       }
     })
   }
 
-  private def imagesViaAbeBooks(bookEntry: ProductEntry)(implicit ec: ExecutionContext) = {
-      AbeBooks.getImageUrl(bookEntry.ean).map(_.map(url => {
+  private def indBookInfoByEANAbeBooks(title: Option[String], ean: String)(implicit ec: ExecutionContext) = {
+      AbeBooks.getImageUrl(ean).map(_.map(url => {
         log.info(s"Via AbeBooks: $url")
-        Seq(url)
+        BookInformation(images = Seq(url), title = title.getOrElse(""))
       }))
   }
 }

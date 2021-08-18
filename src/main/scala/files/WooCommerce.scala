@@ -4,7 +4,7 @@ import java.io.OutputStream
 
 import com.github.tototoshi.csv.CSVWriter
 import files.BolCom.{ProductEntry, format, fromBoolean}
-import products.Enrichment
+import products.BookInformation
 
 
 object WooCommerce {
@@ -23,12 +23,13 @@ object WooCommerce {
     CSVWriter.open(out)(format)
   }
 
-  def toWooCommerceEntry(e: ProductEntry, enrichment: Option[Enrichment]) = {
-    WooCommerceEntry(e.reference, e.ean, "simple", e.stock, e.price, e.description, e.longDescription, e.forSale, enrichment.flatMap(_.title), enrichment.flatMap(_.images), e.deliveryCode, e.condition)
+  def toWooCommerceEntry(e: ProductEntry, enrichment: Option[BookInformation]) = {
+    WooCommerceEntry(
+      e.reference, e.ean, "simple", e.stock, e.price, e.description, e.longDescription, e.forSale, enrichment.map(_.title), enrichment.map(_.images), e.deliveryCode, e.condition)
   }
 
   def toCsvRow(e: WooCommerceEntry) = {
-    List(e.ID, e.SKU, e.Type, e.Stock, e.`Regular price`, e.`Short description`.orElse(e.`Name`).getOrElse(""), e.`Description`, fromBoolean(e.`Published`), e.`Name`.getOrElse(""), e.images.map(_.mkString(",")), e.`Shipping class`, "condition", e.codition).map(_.toString)
+    List(e.ID, e.SKU, e.Type, e.Stock, e.`Regular price`, e.`Short description`.orElse(e.`Name`).getOrElse(""), e.`Description`, fromBoolean(e.`Published`), e.`Name`.getOrElse(""), e.images.map(_.mkString(",")).getOrElse(""), e.`Shipping class`, "condition", e.codition)
   }
 
   def writeWoocommerceCsv(bookEntries: Seq[WooCommerceEntry], out: OutputStream) = {

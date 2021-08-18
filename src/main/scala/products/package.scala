@@ -1,4 +1,4 @@
 package object products {
 
-  case class Enrichment(title:Option[String], images: Option[Seq[String]])
+  case class BookInformation(title: String, description:Option[String] = None, images: Seq[String] = Seq.empty)
 }

@@ -4,16 +4,16 @@ description := "Tiny Store Manager"
 
 version := "0.1"
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.6"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
   "bolcom-bintray" at "https://dl.bintray.com/pvdissel/bol-com-releases")
 
-lazy val akkaHttpVersion = "10.1.12"
-lazy val akkaVersion    = "2.6.5"
-lazy val circeVersion = "0.13.0"
+lazy val akkaHttpVersion = "10.2.5-M1"
+lazy val akkaVersion    = "2.6.15"
+lazy val circeVersion = "0.14.1"
 
 val jsonDependencies: List[ModuleID] = List(
   "io.circe"                          %% "circe-core"                 % circeVersion,
@@ -27,7 +27,7 @@ libraryDependencies += "com.h2database" % "h2" % "1.4.199"
 libraryDependencies ++= Seq(
   "com.typesafe.akka"  %% "akka-http"                % akkaHttpVersion,
   "com.typesafe.akka"  %% "akka-actor-typed"         % akkaVersion,
-  "de.heikoseeberger"  %% "akka-http-circe"          % "1.29.1",
+  "de.heikoseeberger"  %% "akka-http-circe"          % "1.36.0",
   "com.typesafe.akka"  %% "akka-stream"              % akkaVersion,
   "com.typesafe.akka"  %% "akka-slf4j"               % akkaVersion,
   "ch.qos.logback"     % "logback-classic"           % "1.2.3",
