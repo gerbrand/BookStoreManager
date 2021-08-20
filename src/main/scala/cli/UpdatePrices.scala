@@ -9,6 +9,19 @@ import java.text.NumberFormat
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
 object UpdatePrices extends App {
+  /**
+   * Round to more nicely looking number, rounded to 5 cent
+   * @param price
+   * @return
+   */
+  def prettyRoundPrice(price:BigDecimal) = {
+    val p=(price*100).setScale(0, BigDecimal.RoundingMode.HALF_EVEN)
+    val m = p % 5
+    if (m>=3)
+      (p + (5-m))  / 100
+    else
+      (p - m) / 100
+  }
   val aanbodFile = new File("mijn_huidige_aanbod 2021-08-18.xlsx")
   val aanbodFileOut = new File("mijn_huidige_aanbod 2021-08-18-updated-prices.xlsx")
 
@@ -20,7 +33,7 @@ object UpdatePrices extends App {
   entryRows.foreach(row => {
     val priceCell = BolCom.getPriceCell(row)
     val price = BigDecimal(priceCell.getRawValue)
-    val updatedPrice:BigDecimal =  (if (price<minPrice) minPrice else if (price >=10 && price<=25) (price*1.10) else price).setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+    val updatedPrice:BigDecimal =  if (price<minPrice) minPrice else if (price >=10 && price<=25) prettyRoundPrice(price*1.10) else price
 
     //priceCell.setCellValue(updatedPrice.doubleValue)
     priceCell.setCellValueImpl(updatedPrice.doubleValue)
