@@ -2,13 +2,16 @@ package cli
 
 import files.BolCom
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import xls.PoiUtils
 
 import java.io._
 import java.math.{MathContext, RoundingMode}
 import java.text.NumberFormat
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
-object UpdatePrices extends App {
+object UpdatePrices {
+  val minPrice = BigDecimal(9.95)
+
   /**
    * Round to more nicely looking number, rounded to 5 cent
    * @param price
@@ -22,25 +25,38 @@ object UpdatePrices extends App {
     else
       (p - m) / 100
   }
-  val aanbodFile = new File("mijn_huidige_aanbod 2021-08-18.xlsx")
-  val aanbodFileOut = new File("mijn_huidige_aanbod 2021-08-18-updated-prices.xlsx")
 
-  val aanbodWorkbook = new XSSFWorkbook(aanbodFile)
 
-  // Updating all the prices into a new workshet
-  val entryRows = BolCom.getEntryRows(aanbodWorkbook)
-  val minPrice = BigDecimal(9.95)
-  entryRows.foreach(row => {
-    val priceCell = BolCom.getPriceCell(row)
-    val price = BigDecimal(priceCell.getRawValue)
-    val updatedPrice:BigDecimal =  if (price<minPrice) minPrice else if (price >=10 && price<=25) prettyRoundPrice(price*1.10) else price
 
-    //priceCell.setCellValue(updatedPrice.doubleValue)
-    priceCell.setCellValueImpl(updatedPrice.doubleValue)
+  def updatePrice(price:BigDecimal) = {
+    if (price<minPrice) minPrice else if (price >=10 && price<=25) prettyRoundPrice(price*1.10) else price
+  }
 
-  })
-  val out = new FileOutputStream(aanbodFileOut)
+  private def updateBolComAanbodsheet(aanbodFile: File, aanbodFileOut: File) = {
+    val aanbodWorkbook = new XSSFWorkbook(aanbodFile)
 
-  aanbodWorkbook.write(out)
-  out.close()
+    // Updating all the prices into a new workshet
+    val entryRows = BolCom.getEntryRows(aanbodWorkbook)
+
+    entryRows.foreach(row => {
+      val bsn = row.getCell(1).getStringCellValue
+      val priceCell = row.getCell(4)
+
+      val price = BigDecimal(priceCell.getStringCellValue.replace(',','.'))
+      val updatedPrice: BigDecimal = updatePrice(price)
+
+      PoiUtils.updateCellIfNeeded(row, 4, Some(updatedPrice.toString()) )
+
+    })
+    val out = new FileOutputStream(aanbodFileOut)
+
+    aanbodWorkbook.write(out)
+    out.close()
+  }
+
+  def main(args:Array[String]) = {
+    val aanbodFile = new File("mijn_huidige_aanbod 2021-08-23.xlsx")
+    val aanbodFileOut = new File("mijn_huidige_aanbod 2021-08-23-updated-prices.xlsx")
+    updateBolComAanbodsheet(aanbodFile, aanbodFileOut)
+  }
 }

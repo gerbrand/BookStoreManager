@@ -3,10 +3,10 @@ package files
 import java.io._
 import java.net.URL
 import java.util.{Calendar, Date}
-
 import com.github.tototoshi.csv.{CSVWriter, DefaultCSVFormat, QUOTE_NONNUMERIC}
 import org.apache.poi.ss.usermodel.{RichTextString, Row}
 import org.apache.poi.xssf.usermodel.{XSSFRow, XSSFWorkbook}
+import xls.PoiUtils.updateCellIfNeeded
 
 import scala.collection.mutable
 
@@ -49,7 +49,7 @@ object BolCom {
       ean = row.getCell(1).getRawValue,
       condition = row.getCell(2).getRawValue,
       stock = Integer.parseInt(row.getCell(3).getRawValue),
-      price = BigDecimal(getPriceCell(row).getRawValue),
+      price = BigDecimal(row.getCell(4).getRawValue),
       deliveryCode = row.getCell(5).getRawValue,
       longDescription = row.getCell(6).getRawValue,
       forSale = fromJaNee(row.getCell(7).getRawValue),
@@ -58,34 +58,12 @@ object BolCom {
     )
   }
 
-  def getPriceCell(row: XSSFRow) = {
-    row.getCell(4)
-  }
-
   def writeEntry(row: XSSFRow, entry: ProductEntry) = {
     updateCellIfNeeded(row, 8, entry.title)
   }
 
 
-  def updateCellIfNeeded[T](row: XSSFRow, cellNum: Int, value: Option[T])  = {
-    value.foreach(v => {
-      val cell = row.getCell(cellNum, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK)
-      if (cell.getStringCellValue!=v.toString) {
-        /** Deconstruct based on type. */
-        v match {
-          case v:Seq[String] =>cell.setCellFormula(v.mkString("\"",",",""))
-          case v:String =>cell.setCellValue(v)
-          case v:Double =>cell.setCellValue(v)
-          case v:Calendar =>cell.setCellValue(v)
-          case v:RichTextString =>cell.setCellValue(v)
-          case v:Date =>cell.setCellValue(v)
-          case v:Boolean => cell.setCellValue(v)
-        }
-      }
-    })
 
-
-  }
 
   def openWorkbook(in: InputStream) = {
     val aanbodWorkbook = new XSSFWorkbook(in)
