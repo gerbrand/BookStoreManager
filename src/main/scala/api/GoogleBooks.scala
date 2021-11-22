@@ -7,18 +7,20 @@ import com.google.api.services.books.Books
 import com.google.api.services.books.BooksRequestInitializer
 import com.google.api.services.books.model.Volume
 import com.google.api.services.books.model.Volumes
+import org.slf4j.LoggerFactory
+
 import java.io.IOException
 import java.net.URLEncoder
 import java.text.NumberFormat
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /*
  * Based on https://github.com/google/google-api-java-client-samples/blob/master/books-cmdline-sample/src/main/java/com/google/api/services/samples/books/cmdline/ ( Copyright (c) 2011 Google Inc. )
  */
-object GoogleBooks {
-
+class GoogleBooks(apiKey: String) {
+  private val log = LoggerFactory.getLogger(getClass)
   val jsonFactory = JacksonFactory.getDefaultInstance()
 
   /**
@@ -30,27 +32,32 @@ object GoogleBooks {
   private val CURRENCY_FORMATTER = NumberFormat.getCurrencyInstance
   private val PERCENT_FORMATTER = NumberFormat.getPercentInstance
 
-  ClientCredentials.errorIfNotSpecified
   // Set up Books client.
-  import api.ClientCredentials
   import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
   import com.google.api.services.books.Books
   import com.google.api.services.books.BooksRequestInitializer
-  val books = new Books.Builder(GoogleNetHttpTransport.newTrustedTransport, jsonFactory, null).setApplicationName(APPLICATION_NAME).setGoogleClientRequestInitializer(new BooksRequestInitializer(ClientCredentials.API_KEY)).build
+  val books = new Books.Builder(GoogleNetHttpTransport.newTrustedTransport, jsonFactory, null).setApplicationName(APPLICATION_NAME).setGoogleClientRequestInitializer(new BooksRequestInitializer(apiKey)).build
 
-  def queryGoogleBooks(query: String)(implicit ec:ExecutionContext): Future[List[Volume]] = {
+  def queryGoogleBooksByIsbn(isbn: String): Try[List[Volume]] = {
+    queryGoogleBooks(s"isbn:$isbn")
+  }
 
-    Future {
-      //val q = s"isbn:$query"
-      val q = s"isbn:$query"
+  def queryGoogleBooks(q: String): Try[List[Volume]] = {
 
+    Try {
       val volumesList = books.volumes().list(q)
       val result = volumesList.execute()
       if (result.getTotalItems>0) {
         result.getItems.asScala.toList
       } else {
+        log.info(s"No info found for query ${q}")
         List.empty
       }
     }
   }
+}
+
+object GoogleBooks extends App {
+  val api = new GoogleBooks(System.getenv("GOOGLE_API_KEY"))
+  api.queryGoogleBooks("reisgidsen")
 }

@@ -11,11 +11,9 @@ import scala.util.{Failure, Success, Try}
  *
  * @see http://www.librarything.com/api
  */
-object LibraryThing {
+class LibraryThing(apiKey: String) {
   val pattern = "^\\s*<meta property=\\\"([\\w:]*)\\\" content=\\\"([^\\\"]*)\\\"\\s*/>$".r
 
-
-  val libraryThingDevKey = System.getenv("LIBRARY_THING_DEV_KEY")
 
   def getMetaData(is: InputStream):Map[String, String] = {
     val reader = new BufferedReader((new InputStreamReader(is)))
@@ -24,9 +22,9 @@ object LibraryThing {
     resp.toMap
   }
 
-  def getMetaDataByISBN(isbn: String)(implicit ec:ExecutionContext): Future[Map[String, String]] = {
+  def getMetaDataByISBN(isbn: String): Try[Map[String, String]] = {
     val url = new URL(s"http://www.librarything.com/isbn/$isbn")
-    Future{
+    Try{
       val c = url.openConnection()
       val is = c.getInputStream
       val metaData = getMetaData(is)
@@ -49,11 +47,16 @@ object LibraryThing {
     }
   }
 
+
+}
+
+object LibraryThing {
   final def main(args: Array[String]) = {
     implicit val ec = ExecutionContext.global
+    val libraryThing = new LibraryThing(System.getenv("LIBRARY_THING_DEV_KEY"))
     if (args.length>0) {
       val isbn = args(0)
-      val metadata = LibraryThing.getMetaDataByISBN(isbn)
+      val metadata =libraryThing.getMetaDataByISBN(isbn)
       println(metadata)
     }
   }

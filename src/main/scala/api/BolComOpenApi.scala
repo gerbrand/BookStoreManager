@@ -7,13 +7,14 @@ import com.bol.openapi.{OpenApiClient, QuerySearchField}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
-object BolComOpenApi {
+import scala.util.Try
+class BolComOpenApi(apiKey: String) {
   // From https://partnerblog.bol.com/je-profiel/?updated=true
-  val client = OpenApiClient.withDefaultClient(System.getenv("BOLCOM_OPEN_API_KEY"))
+  val client = OpenApiClient.withDefaultClient(apiKey)
 
-  def findProducts(isbn: String)(implicit ec:ExecutionContext) = {
-    Future {
-      val search = client.searchBuilder().dataType(DataType.PRODUCTS).allOffers().cheapestOffer().term(isbn)
+  def findProducts(isbn: String) = {
+    Try {
+      val search = client.searchBuilder().dataType(DataType.PRODUCTS).term(isbn)
 
        search.search()
     }.map(result => result.getProducts.asScala.toList)

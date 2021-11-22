@@ -1,51 +1,45 @@
 package products
 
-import java.io.FileNotFoundException
+import akka.actor.ActorSystem
 
+import java.io.FileNotFoundException
 import api.{AbeBooks, BolComOpenApi, GoogleBooks, LibraryThing}
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import files.BolCom.ProductEntry
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
-import scala.concurrent.{ExecutionContext, Future}
 
-object ProductEnricher {
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
+
+class ProductEnricher(implicit system: ActorSystem, ec: ExecutionContext) {
   private val log = LoggerFactory.getLogger(getClass)
 
-  def findBookInfo(ean: String, reference: String, title: Option[String])(implicit ec: ExecutionContext): Future[BookInformation] = {
-    for {
-      googleInfo <- findBookInfoByEANViaGoogleBooks(ean)
-    } yield(googleInfo.getOrElse(BookInformation(title = fuzzyTitle(reference))))
-  }
-  def enrichEntry(bookEntry: ProductEntry)(implicit ec: ExecutionContext):Future[Option[BookInformation]] = {
-//    if (! bookEntry.enriched.getOrElse(false)) {
-//      enrichViaBolCom(bookEntry)
-//        .flatMap(entry => enrichViaGoogleBooks(entry).recover {
-//          case e: GoogleJsonResponseException => {
-//            log.error("Could not use Google", e)
-//            entry
-//          }
-//        })
-//        .flatMap(enrichViaAbeBooks)
-//        .flatMap(entry => enrichViaLT(entry).recover {
-//          case e: FileNotFoundException => {
-//            log.error("Could not use LibraryThing", e)
-//            entry
-//          }
-//        })
-//        .map(fuzzyEnrich)
-//      //    Future.successful(bookEntry.copy(images=Seq("blah")))
-//    } else {
-      Future.successful(None)
-//    }
+  private val config = system.settings.config
+
+  val bolComOpenApi = new BolComOpenApi(config.getString("bolcom.api.key"))
+  val googleBooksApi = new GoogleBooks(config.getString("google.api.key"))
+  val libraryThingApi = new LibraryThing(config.getString("librarything.api.key"))
+
+  def findExtraBookInfo(bookEntry: ProductEntry)(implicit ec: ExecutionContext):Try[Option[BookInformation]] = {
+    if (bookEntry.images.isEmpty && bookEntry.title.isEmpty) {
+      for {
+        bookInfo <- findBookInfoByEANViaGoogleBooks(bookEntry.ean)
+                    .orElse(findBookInfoByEANViaBolCom(bookEntry.ean))
+                    .orElse(findBookInfoByEANViaLT(bookEntry.ean))
+          .orElse(findBookInfoByEANAbeBooks(None, bookEntry.ean))
+      } yield bookInfo
+    } else {
+      Success(Some(BookInformation(title = bookEntry.title.getOrElse(""), description = bookEntry.description, images = bookEntry.images.map(_.toSeq).getOrElse(Seq.empty))))
+    }
   }
 
   private def fuzzyTitle(reference: String):String = {
       StringUtils.capitalize(s"${reference.replaceAll("\\d","")}")
   }
 
-  private def findBookInfoByEANViaGoogleBooks(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
-      GoogleBooks.queryGoogleBooks(ean).map(_.headOption.map(volume => {
+  private def findBookInfoByEANViaGoogleBooks(ean: String): Try[Option[BookInformation]] = {
+    googleBooksApi.queryGoogleBooksByIsbn(ean).map(_.headOption.map(volume => {
         val title = volume.getVolumeInfo.getTitle
         val description = volume.getVolumeInfo.getDescription
         val images = Option(volume.getVolumeInfo.getImageLinks).toSeq.flatMap(imageLinks => Option(imageLinks.getMedium).toSeq ++ Option(imageLinks.getThumbnail) ++ Option(imageLinks.getLarge)++ Option(imageLinks.getExtraLarge))
@@ -54,8 +48,8 @@ object ProductEnricher {
       }))
   }
 
-  private def findBookInfoByEANViaBolCom(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
-      BolComOpenApi.findProducts(ean).map(_.headOption.map(product => {
+  private def findBookInfoByEANViaBolCom(ean: String): Try[Option[BookInformation]] = {
+    bolComOpenApi.findProducts(ean).map(_.headOption.map(product => {
         import scala.jdk.CollectionConverters._
         val title = product.getTitle
 
@@ -65,8 +59,8 @@ object ProductEnricher {
       }))
   }
 
-  private def findBookInfoByEANViaLT(ean: String)(implicit ec: ExecutionContext): Future[Option[BookInformation]] = {
-    LibraryThing.getMetaDataByISBN(ean).map(metaData => {
+  private def findBookInfoByEANViaLT(ean: String): Try[Option[BookInformation]] = {
+    libraryThingApi.getMetaDataByISBN(ean).map(metaData => {
       val images = metaData.view.filterKeys(_.endsWith("image")).values.toSeq
       val title:Option[String] = metaData.view.get("og:title")
       if (! (images.isEmpty || title.isEmpty)) {
@@ -78,7 +72,7 @@ object ProductEnricher {
     })
   }
 
-  private def indBookInfoByEANAbeBooks(title: Option[String], ean: String)(implicit ec: ExecutionContext) = {
+  private def findBookInfoByEANAbeBooks(title: Option[String], ean: String) = {
       AbeBooks.getImageUrl(ean).map(_.map(url => {
         log.info(s"Via AbeBooks: $url")
         BookInformation(images = Seq(url), title = title.getOrElse(""))
