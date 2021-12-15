@@ -1,0 +1,13 @@
+version: '3'
+services:
+  database:
+    image: 'postgres:latest'
+
+    ports:
+      - 5432:5432
+
+    environment:
+      POSTGRES_USER: tiny_store_manager
+      POSTGRES_PASSWORD: pass123
+      POSTGRES_DB: tiny_store_manager
+

@@ -6,6 +6,10 @@ version := "0.1"
 
 scalaVersion := "2.13.6"
 
+resolvers += "Sonatype OSS S01 Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
+
+resolvers += "Sonatype OSS S01 Releases" at "https://s01.oss.sonatype.org/content/repositories/releases"
+
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
@@ -30,12 +34,37 @@ libraryDependencies ++= Seq(
   "org.scalacheck"     %% "scalacheck"               % "1.14.2"        % Test
 )
 
+libraryDependencies += "nl.software-creation" %% "woocommerce-scala-akka-client" % "0.1.1-SNAPSHOT"
+
+val quillVersion = "3.12.0"
+// From https://github.com/getquill/protoquill
+libraryDependencies ++= Seq(
+  // Syncronous JDBC Modules
+  "io.getquill" %% "quill-jdbc" % quillVersion,
+  // Or ZIO Modules
+  "io.getquill" %% "quill-jdbc-zio" % quillVersion,
+  // Postgres Async
+  "io.getquill" %% "quill-jasync-postgres" % quillVersion,
+  "org.postgresql" % "postgresql" % "42.3.1",
+  "org.flywaydb" % "flyway-core" % "8.2.2",
+)
+
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.6",
   "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
   "org.apache.poi" % "poi-ooxml" % "4.1.0",
   "com.bol.openapi" % "openapi-java-client" % "4.1.0"
 )
+
+// Slick, for database access
+libraryDependencies ++= Seq(
+  "com.typesafe.slick" %% "slick" % "3.3.3",
+  "org.slf4j" % "slf4j-nop" % "1.6.4",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.3"
+)
+
+// CLI Library
+libraryDependencies += "org.rogach" %% "scallop" % "4.1.0"
 
 libraryDependencies ++= Seq(
   "com.google.api-client" % "google-api-client" % "1.30.9",
@@ -46,4 +75,3 @@ lazy val root = (project in file("."))
    .settings(
     name := "tiny-store-manager",
     mainClass := Some("cli.ConvertBolCom"))
-
