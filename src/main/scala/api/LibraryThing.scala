@@ -22,15 +22,13 @@ class LibraryThing(apiKey: String) {
     resp.toMap
   }
 
-  def getMetaDataByISBN(isbn: String): Try[Map[String, String]] = {
+  def getMetaDataByISBN(isbn: String): Map[String, String] = {
     val url = new URL(s"http://www.librarything.com/isbn/$isbn")
-    Try{
-      val c = url.openConnection()
-      val is = c.getInputStream
-      val metaData = getMetaData(is)
-      is.close()
-      metaData
-    }
+    val c = url.openConnection()
+    val is = c.getInputStream
+    val metaData = getMetaData(is)
+    is.close()
+    metaData
   }
 
   def parseResponse(reader: BufferedReader):List[(String, String)] = {

@@ -1,4 +1,6 @@
+import java.net.URL
+
 package object products {
 
-  case class BookInformation(title: String, description:Option[String] = None, images: Seq[String] = Seq.empty)
+  case class BookInformation(title: Option[String], description:Option[String] = None, images: Seq[URL] = Seq.empty)
 }

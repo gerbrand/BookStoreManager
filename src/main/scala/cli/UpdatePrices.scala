@@ -1,6 +1,6 @@
 package cli
 
-import files.BolCom
+import files.BolComExcelImporter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import xls.PoiUtils
 
@@ -36,7 +36,7 @@ object UpdatePrices {
     val aanbodWorkbook = new XSSFWorkbook(aanbodFile)
 
     // Updating all the prices into a new workshet
-    val entryRows = BolCom.getEntryRows(aanbodWorkbook)
+    val entryRows = BolComExcelImporter.getEntryRows(aanbodWorkbook)
 
     entryRows.foreach(row => {
       val bsn = row.getCell(1).getStringCellValue

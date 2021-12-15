@@ -38,13 +38,11 @@ class GoogleBooks(apiKey: String) {
   import com.google.api.services.books.BooksRequestInitializer
   val books = new Books.Builder(GoogleNetHttpTransport.newTrustedTransport, jsonFactory, null).setApplicationName(APPLICATION_NAME).setGoogleClientRequestInitializer(new BooksRequestInitializer(apiKey)).build
 
-  def queryGoogleBooksByIsbn(isbn: String): Try[List[Volume]] = {
+  def queryGoogleBooksByIsbn(isbn: String): List[Volume] = {
     queryGoogleBooks(s"isbn:$isbn")
   }
 
-  def queryGoogleBooks(q: String): Try[List[Volume]] = {
-
-    Try {
+  def queryGoogleBooks(q: String): List[Volume] = {
       val volumesList = books.volumes().list(q)
       val result = volumesList.execute()
       if (result.getTotalItems>0) {
@@ -53,7 +51,6 @@ class GoogleBooks(apiKey: String) {
         log.info(s"No info found for query ${q}")
         List.empty
       }
-    }
   }
 }
 

@@ -5,3 +5,15 @@ target
 *.class
 *.log
 test.mv.db
+*.log
+*.pyc
+.cache/
+.coverage
+.idea/
+.vscode/
+woocommerce_books.egg-info/
+build/
+dist/
+docs/build/
+venv/
+wheelhouse/

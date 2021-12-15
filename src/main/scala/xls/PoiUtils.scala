@@ -19,6 +19,7 @@ object PoiUtils {
           case v:RichTextString =>cell.setCellValue(v)
           case v:Date =>cell.setCellValue(v)
           case v:Boolean => cell.setCellValue(v)
+          case v => cell.setCellValue(s"$v")
         }
       }
     })

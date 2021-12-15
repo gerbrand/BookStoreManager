@@ -8,7 +8,7 @@ class BolComSpec extends FunSpec with Matchers {
     it("should parse sample file") {
       val in = getClass.getResourceAsStream("/bol_com_mijn_huidige_aanbod.xlsx")
       val aanbodWorkbook = new XSSFWorkbook(in)
-      val entries = BolCom.getEntries(aanbodWorkbook)
+      val entries = BolComExcelImporter.getEntries(aanbodWorkbook)
       aanbodWorkbook.close()
       in.close()
       entries should have size(13)

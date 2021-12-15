@@ -14,13 +14,13 @@ import scala.util.Try
 /**
  * Reads an Excel-file from Bol.com containing product-offers for shop-in-shop
  */
-object BolCom {
+object BolComExcelImporter {
 
   /*
   head: List(Reference, EAN, Condition, Stock, Price, Deliverycode, Offer description, For sale, Title)
    */
 
-  case class ProductEntry(reference: String, ean: String, condition: String, stock: Int, price: BigDecimal, deliveryCode: String, description: Option[String], longDescription: String, forSale: Boolean, title: Option[String], images: Option[Array[String]])
+  case class ProductEntry(reference: String, ean: String, condition: String, stock: Int, price: BigDecimal, deliveryCode: String, description: Option[String], longDescription: String, forSale: Boolean, title: Option[String], images: Option[Array[URL]])
 
   def fromJaNee(v: String): Boolean = v.toUpperCase() == "JA"
 
@@ -54,14 +54,14 @@ object BolCom {
       deliveryCode = row.getCell(5).getStringCellValue,
       longDescription = row.getCell(6).getStringCellValue,
       forSale = fromJaNee(row.getCell(7).getStringCellValue),
-      title = Option(row.getCell(8).getStringCellValue).filterNot(_.isBlank),
+      title = Option(row.getCell(8).getStringCellValue).filterNot(_.isBlank).filterNot(_.matches("[\\d\\s\"]*")),
       description = Option(row.getCell(10)).map(_.getStringCellValue),
-      images = Option(row.getCell(9)).map(_.getStringCellValue).filterNot(_.isBlank).map(_.split(","))
+      images = Option(row.getCell(9)).map(_.getStringCellValue).filterNot(_.isBlank).map(_.split(",").map(u => new URL(u)))
     )
   }
 
   def updateEntryIfNeeded(row: XSSFRow, enrichment: Option[products.BookInformation]) = {
-    updateCellIfNeeded(row, 8, enrichment.map(_.title))
+    updateCellIfNeeded(row, 8, enrichment.flatMap(_.title))
     updateCellIfNeeded(row, 9, enrichment.map(_.images).filterNot(_.isEmpty).map(_.mkString(",")))
   }
 
