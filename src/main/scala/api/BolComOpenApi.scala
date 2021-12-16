@@ -6,8 +6,7 @@ import com.bol.openapi.QuerySearchField.SearchField
 import com.bol.openapi.{OpenApiClient, QuerySearchField}
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.ObjectMapper
-import reactivemongo.api.bson.collection.BSONSerializationPack
-import reactivemongo.api.bson.{BSONDocument, BSONElement, BSONObjectID, BSONString, BSONValue}
+
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -39,16 +38,9 @@ object BolComOpenApi {
       val mapper = new ObjectMapper()
       val writer = mapper.writerFor(classOf[com.bol.api.openapi_4_0.Product])
 
-      import reactivemongo.play.json._
-      import reactivemongo.api.bson.{
-        BSONReader, BSONInteger, BSONNull, BSONString
-      }
 
-      BSONValue.pretty()
       val jsonStr = writer.writeValueAsString(product)
 
-
-      import reactivemongo.play.json._
 
       println(jsonStr)
 

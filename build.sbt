@@ -45,10 +45,8 @@ libraryDependencies ++= Seq(
   "com.bol.openapi" % "openapi-java-client" % "4.1.0"
 )
 
-libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "1.0.8"
-libraryDependencies += "org.reactivemongo" %% "reactivemongo-akkastream" % "1.0.8"
-libraryDependencies += "org.reactivemongo" %% "reactivemongo-play-json-compat" % "1.0.8-play28"
-libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "1.0.8-play28"
+libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "4.4.0"
+libraryDependencies += "org.mongojack" % "mongojack" % "4.3.0"
 
 // CLI Library
 libraryDependencies += "org.rogach" %% "scallop" % "4.1.0"
