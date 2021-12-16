@@ -5,23 +5,34 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.actor.ActorSystem
+import org.woocommerce.akkaclient.api.DefaultApi
+import org.woocommerce.akkaclient.core.{ApiInvoker, BasicCredentials}
+
+import scala.Seq.empty
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 
 class WooCommerceClient(wpRestUrl: String, key: String, secret: String)(implicit val system:ActorSystem, implicit val executionContext: ExecutionContext) {
-  val request = Get(s"${wpRestUrl}/wc/v3/orders")
-    .addCredentials(BasicHttpCredentials(key, secret))
-  val fResult = Http().singleRequest(request).transform(res => Unmarshal(res).to[String], e => e).flatten
-  val result = Await.result(fResult, 5.seconds);
-  println(result)
-  system.terminate()
 
 }
 object WooCommerceClient extends App {
-  implicit val system: ActorSystem = ActorSystem("akka-http-sample")
-  sys.addShutdownHook(system.terminate())
-  implicit val executionContext = system.getDispatcher
+  implicit val system: ActorSystem = ActorSystem("Woocommerce-Akka-Example")
+  implicit val ec = system.getDispatcher
 
-  val client = new WooCommerceClient(System.getenv("WOOCOMMERCE_REST_URL"), System.getenv("WOOCOMMERCE_PUBIC_KEY"), System.getenv("WOOCOMMERCE_SECRET_KEY"))
+  val invoker = ApiInvoker()
+  // Wordpress user and password. Tip:
+  // at very least app generated password instead of your default username or password, and preferably a seperated account
+  implicit val basicAuth = BasicCredentials(sys.env("WORDPRESS_USER"), sys.env("WORDPRESS_PASSWORD"))
+  // Using the generated api to get a list of products
+  val wcApi = DefaultApi("https://www.liberactiva.nl/wp-json/wc/v3")
+  // Constructing a get request to retrieve a few products
+  val productsGet = wcApi.productsGet(exclude=Seq.empty, include=Seq.empty, parent=Seq.empty,parentExclude=Seq.empty, page=Some(2) )
+  val fResult = invoker.execute(productsGet)
+  val products = Await.result(fResult, 15.seconds)
+  println(products.content.map(p => s"Product ${p.name.getOrElse("")} with barcode ${p.sku.getOrElse("unknown")} for ${p.price.getOrElse("unknown")}").mkString("\n"))
+  System.exit(0)
 }

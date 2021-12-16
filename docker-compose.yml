@@ -1,13 +1,13 @@
-version: '3'
+version: '3.1'
 services:
-  database:
-    image: 'postgres:latest'
-
+  mongo:
+    image: mongo
+    restart: always
     ports:
-      - 5432:5432
-
-    environment:
-      POSTGRES_USER: tiny_store_manager
-      POSTGRES_PASSWORD: pass123
-      POSTGRES_DB: tiny_store_manager
-
+      - 27017:27017
+    volumes:
+    - db-data:/data/db
+    - mongo-config:/data/configdb
+volumes:
+  db-data:
+  mongo-config:

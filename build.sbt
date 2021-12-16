@@ -1,10 +1,12 @@
 name := "tiny-store-manager"
 
+ThisBuild / scalaVersion     := "2.13.7"
+ThisBuild / versionScheme    := Some("semver-spec")
+ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / organization     := "nl.software-creation"
+ThisBuild / organizationName := "software-creation"
+
 description := "Tiny Store Manager"
-
-version := "0.1"
-
-scalaVersion := "2.13.6"
 
 resolvers += "Sonatype OSS S01 Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
 
@@ -36,19 +38,6 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "nl.software-creation" %% "woocommerce-scala-akka-client" % "0.1.1-SNAPSHOT"
 
-val quillVersion = "3.12.0"
-// From https://github.com/getquill/protoquill
-libraryDependencies ++= Seq(
-  // Syncronous JDBC Modules
-  "io.getquill" %% "quill-jdbc" % quillVersion,
-  // Or ZIO Modules
-  "io.getquill" %% "quill-jdbc-zio" % quillVersion,
-  // Postgres Async
-  "io.getquill" %% "quill-jasync-postgres" % quillVersion,
-  "org.postgresql" % "postgresql" % "42.3.1",
-  "org.flywaydb" % "flyway-core" % "8.2.2",
-)
-
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "scala-csv" % "1.3.6",
   "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
@@ -56,12 +45,10 @@ libraryDependencies ++= Seq(
   "com.bol.openapi" % "openapi-java-client" % "4.1.0"
 )
 
-// Slick, for database access
-libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick" % "3.3.3",
-  "org.slf4j" % "slf4j-nop" % "1.6.4",
-  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.3"
-)
+libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "1.0.8"
+libraryDependencies += "org.reactivemongo" %% "reactivemongo-akkastream" % "1.0.8"
+libraryDependencies += "org.reactivemongo" %% "reactivemongo-play-json-compat" % "1.0.8-play28"
+libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "1.0.8-play28"
 
 // CLI Library
 libraryDependencies += "org.rogach" %% "scallop" % "4.1.0"
