@@ -2,45 +2,45 @@ package cli
 
 import akka.actor.ActorSystem
 import com.google.api.client.util.IOUtils
+import db.ProductInfoDatabase
 import files.{BolComExcelImporter, WooCommerceExporter}
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.xssf.usermodel.{XSSFRow, XSSFWorkbook}
 import org.slf4j.LoggerFactory
 import products.ProductEnricher
 import org.rogach.scallop._
 
 import java.io.{File, FileOutputStream}
 import java.net.URL
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
  * Converts an Excel-file from Bol.com containing product-offers for shop-in-shop to a csv suitable
- * for import in Woocommerce
+ * for import in Woocommerce *and* wil download images for each product using various sources.
  */
-object BolComAanbodFileManager {
-  class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-    val bolcom = opt[File](required = false)
-    val woocommerce = opt[File](required = false)
-    val downloadimages = opt[File](required = false)
-    val aanbodFile = trailArg[File]()
-    verify()
-  }
+class BolComAanbodFileManager(implicit system: ActorSystem, implicit val ec:ExecutionContext) {
+
 
   val log = LoggerFactory.getLogger(getClass)
 
-  def enrichAanbodFile(productEnricher: ProductEnricher, aanbodFile: File, aanbodFileOut: File): Unit = {
+  val productInfoDatabase = new ProductInfoDatabase()
+
+  def enrichAanbodFile(aanbodFile: File, aanbodFileOut: File): Future[Unit] = {
     val tempAanbodFile = new File(aanbodFile.getParentFile, aanbodFile.getName.split('.')(0) + "_temp.xlsx")
     val aanbodWorkbook = new XSSFWorkbook(aanbodFile)
 
     val entryRows = BolComExcelImporter.getEntryRows(aanbodWorkbook)
 
-    try {
-      entryRows.foreach(row => {
-        val entry = BolComExcelImporter.toEntry(row) //.recoverWith{case t => Failure(new RuntimeException(s"Could not read row ${row.getRowNum}", t))
-        val extraBookInfo = productEnricher.findExtraBookInfoIfNeeded(entry)
-        BolComExcelImporter.updateEntryIfNeeded(row, extraBookInfo)
-      })
-    } catch {
-      case e: Throwable => log.error("Could not process entire file", e)
-    } finally {
+    def processRow(row:XSSFRow) = {
+      val entry = BolComExcelImporter.toEntry(row) //.recoverWith{case t => Failure(new RuntimeException(s"Could not read row ${row.getRowNum}", t))
+      val extraBookInfo = productInfoDatabase.findBookInfo(entry)
+      extraBookInfo.flatMap(e => Future.successful(BolComExcelImporter.updateEntryIfNeeded(row, e)))
+
+    }
+    val result = entryRows.foldLeft(Future.successful(())){case (f, row) => f.flatMap(_ => processRow(row))}
+
+    result.onComplete(result => {
       log.debug(s"Saving the result to ${aanbodFile}")
       // Also write back everything
       val xlsOut = new FileOutputStream(tempAanbodFile)
@@ -51,7 +51,14 @@ object BolComAanbodFileManager {
       aanbodFile.delete()
       log.debug(s"Overwriting ${aanbodFile} with ${tempAanbodFile}")
       tempAanbodFile.renameTo(aanbodFileOut)
-    }
+
+      result match {
+        case Success(v) => log.info("Successfully processed everything")
+        case Failure(e) => log.error("Could not process entire file", e)
+      }
+
+    })
+    result
   }
 
   def convertToWoocommerce(aanbodFile: File, woocommerceFile: File): Unit = {
@@ -117,15 +124,29 @@ object BolComAanbodFileManager {
       })
     })
   }
+}
+
+object BolComAanbodFileManager {
+  class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
+    val bolcom = opt[File](required = false)
+    val woocommerce = opt[File](required = false)
+    val downloadimages = opt[File](required = false)
+    val aanbodFile = trailArg[File]()
+    verify()
+  }
+
+  implicit val system: ActorSystem = ActorSystem("BolComAanbodFileManager")
+  implicit val ec = system.getDispatcher
+  val m = new BolComAanbodFileManager()
+  import m._
 
   final def main(args: Array[String]): Unit = {
-    implicit val system: ActorSystem = ActorSystem("BolComAanbodFileManager")
-    implicit val ec = system.getDispatcher
+
     sys.addShutdownHook(system.terminate())
 
     Thread.setDefaultUncaughtExceptionHandler { case (thread, throwable) => {
       log.error(s"Uncaught exception in thread $thread", throwable)
-      System.exit(0)
+      System.exit(1)
     }
     }
 
@@ -135,7 +156,7 @@ object BolComAanbodFileManager {
       aanbodFile => {
         conf.bolcom.foreach(aanbodFileOut => {
           val productEnricher = new ProductEnricher()(system, ec)
-          enrichAanbodFile(productEnricher, aanbodFile, aanbodFileOut)
+          Await.result(enrichAanbodFile( aanbodFile, aanbodFileOut),30.minutes)
         })
         conf.woocommerce.foreach(wcOut => {
           convertToWoocommerce(aanbodFile, wcOut)
@@ -146,7 +167,7 @@ object BolComAanbodFileManager {
       }
     )
 
-      System.exit(0)
+
 
   }
 }

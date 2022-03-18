@@ -11,19 +11,23 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.Try
-class BolComOpenApi(apiKey: String) {
+class BolComOpenApi(apiKey: String)(implicit ec:ExecutionContext) {
   // From https://partnerblog.bol.com/je-profiel/?updated=true
   val client = OpenApiClient.withDefaultClient(apiKey)
 
-  def findProducts(isbn: String) = {
-    val search = client.searchBuilder().dataType(DataType.PRODUCTS).term(isbn)
+  def getProduct(isbn: String) = {
+    Future {
+      val search = client.searchBuilder().dataType(DataType.PRODUCTS).term(isbn)
 
-     val result = search.search()
-    result.getProducts.asScala.toList
+      val result = search.search()
+      result.getProducts.asScala.toList.headOption
+    }
   }
+
 }
 
 object BolComOpenApi {
+  implicit val ec = ExecutionContext.Implicits.global
   val api = new BolComOpenApi(System.getenv("BOLCOM_OPEN_API_KEY"))
   final def main(args: Array[String]) = {
     if (args.length > 0) {
