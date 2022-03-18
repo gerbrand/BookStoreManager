@@ -6,7 +6,6 @@ import db.ProductInfoDatabase
 import files.{BolComExcelImporter, WooCommerceExporter}
 import org.apache.poi.xssf.usermodel.{XSSFRow, XSSFWorkbook}
 import org.slf4j.LoggerFactory
-import products.ProductEnricher
 import org.rogach.scallop._
 
 import java.io.{File, FileOutputStream}
@@ -155,7 +154,6 @@ object BolComAanbodFileManager {
     conf.aanbodFile.foreach(
       aanbodFile => {
         conf.bolcom.foreach(aanbodFileOut => {
-          val productEnricher = new ProductEnricher()(system, ec)
           Await.result(enrichAanbodFile( aanbodFile, aanbodFileOut),30.minutes)
         })
         conf.woocommerce.foreach(wcOut => {

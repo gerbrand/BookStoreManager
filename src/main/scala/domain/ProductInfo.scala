@@ -7,7 +7,7 @@ import products.BookInformation
 import java.net.URL
 import java.time.ZonedDateTime
 import java.util.Date
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.jdk.CollectionConverters._
 case class ProductInfo(ean: String, title: String, description: Option[String] = None, longDescription: String, images: Option[Seq[String]] = None )
 
 abstract class ExternalProductInfo[T]{
@@ -23,7 +23,7 @@ case class ExternalProductInfoFromBolCom(ean: String, sourceType: String = "bolc
   val bookInformation = {
     for {
       productInfo <- originalProductInfo
-      images = productInfo.getImages.map(i => new URL(i.getUrl)).toSeq
+      images = productInfo.getImages.asScala.map(i => new URL(i.getUrl)).toSeq
       title = Option(productInfo.getTitle)
       description =  Option(productInfo.getShortDescription)
     } yield(BookInformation(images = images, title = title, description = description))
